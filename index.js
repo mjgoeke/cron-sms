@@ -1,28 +1,40 @@
+const port = process.env.PORT || 3000;
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+const basicAuthCredentials = JSON.parse(process.env.BASIC_AUTH_CREDENTIALS);
 
-const setTimeoutPromise = require('./setTimeoutPromise').setTimeoutPromise;
 const twilio = require('twilio')(twilioAccountSid, twilioAuthToken);
 const express = require('express');
+const app = express();
+const basicAuth = require('express-basic-auth');
 
+app.use(basicAuth({ users: basicAuthCredentials }));
 
 const jobs = {};
-const app = express();
-app.post('/:jobName/', (req, res) => {
-  const jobName = req.params.jobName;
-  const phoneNumber = req.query.phoneNumber;
-  const timeoutMinutes = req.query.timeoutMinutes;
-  const message = req.query.message;
-  
-  jobs[jobName]?.cancel();
-  jobs[jobName] = setTimeoutPromise(timeoutMinutes * 60 * 1000)
+
+app.post('/', (req, res) => {
+  const q = { jobName: req.query.jobName, phoneNumber: req.query.phoneNumber, timeoutMinutes: req.query.timeoutMinutes, message: req.query.message };
+  if (!q.jobName || !q.phoneNumber || !q.timeoutMinutes || !q.message){
+    res.status(400).send();
+    return;
+  }
+  const userJobName = req.user + q.jobName;
+  jobs[userJobName] && jobs[userJobName].cancel();
+  jobs[userJobName] = setTimeoutPromise(q.timeoutMinutes * 60 * 1000);
+  jobs[userJobName]
     .promise.then(() => {
-      sendMessage(message, phoneNumber);
-      delete jobs[jobName];
-    });
+      sendMessage(q.message, q.phoneNumber)
+        .then(result => {
+          delete jobs[userJobName];
+          if (result.status != 'accepted')
+            console.log({result});
+        });
+    })
+    .catch(() => {});
   res.status(200).send();
 });
+app.listen(port);
 
 const sendMessage = (body, to) => 
   twilio.messages.create({
@@ -31,6 +43,22 @@ const sendMessage = (body, to) =>
     to
   });
 
-//ideally we would verify the twilio credentials and log+die if invalid
-
-app.listen(80);
+const setTimeoutPromise = (delay) => {
+    let timer = 0;
+    let reject = null;
+    const promise = new Promise((resolve, _reject) => {
+        reject = _reject;
+        timer = setTimeout(resolve, delay);
+    });
+    return { 
+      get promise() { return promise; },
+      cancel() {
+        if (timer) {
+            clearTimeout(timer);
+            timer = 0;
+            reject();
+            reject = null;
+        }
+      }
+    };
+}
