@@ -30,9 +30,19 @@ app.post('/', requireBody({jobName:"xxxService", phoneNumber:"555-123-4567", tim
   return res.status(200).send();
 });
 
+app.get('/', (req, res) => {
+  const user = req.auth.user;
+  var userJobs = Object.keys(jobTimeouts).filter(x => x.startsWith(user));
+  var result = new Object();
+  userJobs.forEach(x => result[x.slice(user.length)] = getTimeLeft(jobTimeouts[x]));
+  return res.send(result);
+});
+
 app.listen(port);
 
-////////////////////////////////////
+
+
+//////////////////////////////////// utility functions //////////////////////////////////
 function requireBody(expected) {
   return (req, res, next) => {
   for (const prop in expected) {
@@ -45,3 +55,10 @@ function requireBody(expected) {
 
 //function sendMessage(body, to) { return new Promise(() => console.log(`<sms> ${to} ${body}`)); }
 function sendMessage(body, to) { return twilio.messages.create({ messagingServiceSid, body, to }); }
+
+function getTimeLeft(timeout) {
+  const milliseconds = timeout._idleStart + timeout._idleTimeout - (process.uptime() * 1000);
+  const hhmmss = new Date(milliseconds).toISOString().substr(11, 8);
+  const days = Math.floor(milliseconds / 86400);
+  return `${days}:${hhmmss}`;
+}
