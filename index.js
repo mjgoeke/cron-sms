@@ -6,59 +6,42 @@ const basicAuthCredentials = JSON.parse(process.env.BASIC_AUTH_CREDENTIALS);
 
 const twilio = require('twilio')(twilioAccountSid, twilioAuthToken);
 const express = require('express');
-const app = express();
 const basicAuth = require('express-basic-auth');
 
+const app = express();
+app.use(express.json());
 app.use(basicAuth({ users: basicAuthCredentials }));
 
-const jobs = {};
+const jobTimeouts = {};
 
-app.post('/', (req, res) => {
-  const q = { jobName: req.query.jobName, phoneNumber: req.query.phoneNumber, timeoutMinutes: req.query.timeoutMinutes, message: req.query.message };
-  if (!q.jobName || !q.phoneNumber || !q.timeoutMinutes || !q.message){
-    res.status(400).send();
-    return;
-  }
-  const userJobName = req.user + q.jobName;
-  jobs[userJobName] && jobs[userJobName].cancel();
-  jobs[userJobName] = setTimeoutPromise(q.timeoutMinutes * 60 * 1000);
-  jobs[userJobName]
-    .promise.then(() => {
-      sendMessage(q.message, q.phoneNumber)
+app.post('/', requireBody({jobName:"xxxService", phoneNumber:"555-123-4567", timeoutMinutes: 5, message: "service xxx is down"}), (req, res) => {
+  const { jobName, phoneNumber, timeoutMinutes, message } = req.body;
+  const jobId = `${req.auth.user}${jobName}`;
+  jobTimeouts[jobId] && clearTimeout(jobTimeouts[jobId]);
+  const tim = setTimeout(() => {
+      sendMessage(message, phoneNumber)
         .then(result => {
-          delete jobs[userJobName];
+          delete jobTimeouts[jobId];
           if (result.status != 'accepted')
             console.log({result});
         });
-    })
-    .catch(() => {});
-  res.status(200).send();
+    }, timeoutMinutes * 60 * 1000);
+    jobTimeouts[jobId] = tim;
+  return res.status(200).send();
 });
+
 app.listen(port);
 
-const sendMessage = (body, to) => 
-  twilio.messages.create({
-    messagingServiceSid,
-    body,
-    to
-  });
-
-const setTimeoutPromise = (delay) => {
-    let timer = 0;
-    let reject = null;
-    const promise = new Promise((resolve, _reject) => {
-        reject = _reject;
-        timer = setTimeout(resolve, delay);
-    });
-    return { 
-      get promise() { return promise; },
-      cancel() {
-        if (timer) {
-            clearTimeout(timer);
-            timer = 0;
-            reject();
-            reject = null;
-        }
-      }
-    };
+////////////////////////////////////
+function requireBody(expected) {
+  return (req, res, next) => {
+  for (const prop in expected) {
+    if (!Object.prototype.hasOwnProperty.call(req.body, prop))
+      return res.status(400).send("invalid request body, should be in the form of " + JSON.stringify(expected));
+  }
+  return next();
+ }
 }
+
+//function sendMessage(body, to) { return new Promise(() => console.log(`<sms> ${to} ${body}`)); }
+function sendMessage(body, to) { return twilio.messages.create({ messagingServiceSid, body, to }); }
