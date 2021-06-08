@@ -59,6 +59,6 @@ function sendMessage(body, to) { return twilio.messages.create({ messagingServic
 function getTimeLeft(timeout) {
   const milliseconds = timeout._idleStart + timeout._idleTimeout - (process.uptime() * 1000);
   const hhmmss = new Date(milliseconds).toISOString().substr(11, 8);
-  const days = Math.floor(milliseconds / 86400);
+  const days = Math.floor(milliseconds / 86400000);
   return `${days}:${hhmmss}`;
 }
