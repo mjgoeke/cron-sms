@@ -17,9 +17,14 @@ app.use(basicAuth({ users: basicAuthCredentials }));
 const jobTimeouts = {};
 
 app.post('/', requireBody({jobName:"xxxService", timeoutMinutes: 5, message: "service xxx is down"}), (req, res) => {
-  const { jobName, timeoutMinutes, message } = req.body;
+  const { jobName, timeoutMinutes, message, initialMessage } = req.body;
   const jobId = `${req.auth.user}${jobName}`;
   const phoneNumber = userDetails[req.auth.user].phoneNumber;
+  
+  if (initialMessage && !jobTimeouts[jobId]) {
+    sendMessage(initialMessage, phoneNumber);
+  }
+
   jobTimeouts[jobId] && clearTimeout(jobTimeouts[jobId]);
   const t = setTimeout(() => {
     sendMessage(message, phoneNumber)
@@ -29,7 +34,7 @@ app.post('/', requireBody({jobName:"xxxService", timeoutMinutes: 5, message: "se
             console.log({result});
         });
     }, timeoutMinutes * 60 * 1000);
-    jobTimeouts[jobId] = t;
+  jobTimeouts[jobId] = t;
   return res.status(200).send();
 });
 
