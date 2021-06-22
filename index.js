@@ -12,7 +12,7 @@ app.use(express.json());
 
 const basicAuthCredentials = {};
 for (const u in userDetails) basicAuthCredentials[u] = userDetails[u].password;
-app.use(basicAuth({ users: basicAuthCredentials }));
+app.use(basicAuth({ challenge: true, users: basicAuthCredentials }));
 
 const jobTimeouts = {};
 
