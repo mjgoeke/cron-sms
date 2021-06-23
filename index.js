@@ -1,11 +1,16 @@
 const port = process.env.PORT || 3000;
+const userDetails =  (process.env.NODE_ENV === 'production') ? JSON.parse(process.env.USER_DETAILS) : {user: {password: "pass", phoneNumber: "5555555555"}};
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-const userDetails = JSON.parse(process.env.USER_DETAILS);
-const twilio = require('twilio')(twilioAccountSid, twilioAuthToken);
+const twilio = (process.env.NODE_ENV === 'production') ? require('twilio')(twilioAccountSid, twilioAuthToken) : undefined;
+
 const express = require('express');
 const basicAuth = require('express-basic-auth');
+
+const fs = require('fs');
+const Handlebars = require('handlebars');
+const template = Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
 
 const app = express();
 app.use(express.json());
@@ -41,9 +46,10 @@ app.post('/', requireBody({jobName:"xxxService", timeoutMinutes: 5, message: "se
 app.get('/', (req, res) => {
   const user = req.auth.user;
   var userJobs = Object.keys(jobTimeouts).filter(x => x.startsWith(user));
-  var result = new Object();
-  userJobs.forEach(x => result[x.slice(user.length)] = { timeout: getTimeLeft(jobTimeouts[x].timeout), meta: jobTimeouts[x].meta });
-  return res.send(result);
+  var templateData = new Object();
+  userJobs.forEach(x => templateData[x.slice(user.length)] = { timeout: getTimeLeft(jobTimeouts[x].timeout), meta: jobTimeouts[x].meta });
+  const html = template(templateData);
+  return res.send(html);
 });
 
 app.listen(port);
