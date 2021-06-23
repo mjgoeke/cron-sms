@@ -10,7 +10,6 @@ const basicAuth = require('express-basic-auth');
 
 const fs = require('fs');
 const Handlebars = require('handlebars');
-const template = Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
 
 const app = express();
 app.use(express.json());
@@ -43,11 +42,16 @@ app.post('/', requireBody({jobName:"xxxService", timeoutMinutes: 5, message: "se
   return res.status(200).send();
 });
 
+
+const initTemplate = Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
 app.get('/', (req, res) => {
   const user = req.auth.user;
   var userJobs = Object.keys(jobTimeouts).filter(x => x.startsWith(user));
   var templateData = new Object();
   userJobs.forEach(x => templateData[x.slice(user.length)] = { timeout: getTimeLeft(jobTimeouts[x].timeout), meta: jobTimeouts[x].meta });
+
+  const template = (process.env.NODE_ENV === 'production') ? initTemplate : Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
+
   const html = template(templateData);
   return res.send(html);
 });
@@ -69,7 +73,10 @@ function requireBody(expected) {
 
 const sendMessage = (process.env.NODE_ENV === 'production')
   ? (body, to) => twilio.messages.create({ messagingServiceSid, body, to })
-  : (body, to) => new Promise(() => console.log(`<sms> ${to} ${body}`));
+  : (body, to) => new Promise(resolve => {
+      console.log(`<sms> ${to} ${body}`);
+      resolve({status: "accepted"});
+  });
   
 
 function getTimeLeft(timeout) {
