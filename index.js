@@ -38,7 +38,7 @@ app.post('/', requireBody({jobName:"xxxService", timeoutMinutes: 5, message: "se
             console.log({result});
         });
     }, timeoutMinutes * 60 * 1000);
-  jobTimeouts[jobId] = {timeout: t, meta};
+  jobTimeouts[jobId] = {timeout: t, timeoutMinutes, meta};
   return res.status(200).send();
 });
 
@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
   const user = req.auth.user;
   var userJobs = Object.keys(jobTimeouts).filter(x => x.startsWith(user));
   var templateData = new Object();
-  userJobs.forEach(x => templateData[x.slice(user.length)] = { timeout: getTimeLeft(jobTimeouts[x].timeout), meta: jobTimeouts[x].meta });
+  userJobs.forEach(x => templateData[x.slice(user.length)] = { timeout: getTimeLeft(jobTimeouts[x].timeout), timeoutMinutes: jobTimeouts[x].timeoutMinutes, meta: jobTimeouts[x].meta });
 
   const template = (process.env.NODE_ENV === 'production') ? initTemplate : Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
 
@@ -81,7 +81,6 @@ const sendMessage = (process.env.NODE_ENV === 'production')
 
 function getTimeLeft(timeout) {
   const milliseconds = timeout._idleStart + timeout._idleTimeout - (process.uptime() * 1000);
-  const hhmmss = new Date(milliseconds).toISOString().substr(11, 8);
-  const days = Math.floor(milliseconds / 86400000);
-  return `${days}:${hhmmss}`;
+  const minutes =  milliseconds / 1000 / 60;
+  return minutes;
 }

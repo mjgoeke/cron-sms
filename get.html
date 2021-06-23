@@ -1,9 +1,12 @@
 <html>
 
 <head>
+    <title>cron-sms</title>
     <meta name="viewport" content="width=device-width" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <title>cron-sms</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/fontawesome.min.css" integrity="undefined" crossorigin="anonymous">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/regular.css" integrity="undefined" crossorigin="anonymous"> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/solid.css" integrity="undefined" crossorigin="anonymous">
 </head>
 
 <body class="bg-dark">
@@ -11,10 +14,8 @@
         <div class="d-flex flex-column">
             {{#each this}}
             <div class="btn btn-primary m-1">
-                <div class="d-flex flex-row">
-                    <h2>{{@key}}</h2>
-                    <pre style="font-size:large" class="m-2 mb-auto" title="{{timeout}}">&#9200;</pre>
-                </div>
+                <h2 class="d-flex flex-row">{{@key}}</h2>
+                <progress max="{{timeoutMinutes}}" value="{{timeout}}" style="width:100%;opacity:50%;" title="will send sms if heartbeat times out"></progress>
                 <div class="d-flex flex-wrap justify-content-between">
                     {{#each meta}}
                     <p class="mx-3 mb-0">{{@key}}: {{this}}</p>
