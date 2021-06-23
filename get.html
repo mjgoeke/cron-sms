@@ -2,11 +2,35 @@
 
 <head>
     <title>cron-sms</title>
-    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="refresh" content="30" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/fontawesome.min.css" integrity="undefined" crossorigin="anonymous">
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/regular.css" integrity="undefined" crossorigin="anonymous"> -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/solid.css" integrity="undefined" crossorigin="anonymous">
+    <style>
+        .progress-bar {
+            background-color: transparent;
+            border-radius: 1.25em;
+            width: 100%;
+            height: 4px;
+            display: inline-block;
+        }
+        .progress-value {
+            background-color: lightgray;
+            border-radius: 1.25em;
+            height: 4px;
+            display: inline-block;
+            float:left;
+        }
+        {{#each this}}
+        .progress-value.job{{@index}} {
+            animation: progress-{{@index}} {{timeout}}s linear forwards;
+            -webkit-animation: progress-{{@index}} {{timeout}}s linear forwards;
+        }
+
+        @keyframes progress-{{@index}} {
+            from { width: {{timeoutPercent}}% }
+            to { width: 0}
+        }
+        {{/each}}
+    </style>
 </head>
 
 <body class="bg-dark">
@@ -14,8 +38,10 @@
         <div class="d-flex flex-column">
             {{#each this}}
             <div class="btn btn-primary m-1">
-                <h2 class="d-flex flex-row">{{@key}}</h2>
-                <progress max="{{timeoutMinutes}}" value="{{timeout}}" style="width:100%;opacity:50%;" title="will send sms if heartbeat times out"></progress>
+                <h2 class="d-flex mb-0">{{@key}}</h2>
+                <div class="progress-bar">
+                    <span class="progress-value job{{@index}}"></span>
+                </div>
                 <div class="d-flex flex-wrap justify-content-between">
                     {{#each meta}}
                     <p class="mx-3 mb-0">{{@key}}: {{this}}</p>

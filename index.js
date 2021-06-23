@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
   const user = req.auth.user;
   var userJobs = Object.keys(jobTimeouts).filter(x => x.startsWith(user));
   var templateData = new Object();
-  userJobs.forEach(x => templateData[x.slice(user.length)] = { timeout: getTimeLeft(jobTimeouts[x].timeout), timeoutMinutes: jobTimeouts[x].timeoutMinutes, meta: jobTimeouts[x].meta });
+  userJobs.forEach(x => templateData[x.slice(user.length)] = { timeout: getSecondsLeft(jobTimeouts[x].timeout), timeoutPercent: getSecondsLeft(jobTimeouts[x].timeout) / (jobTimeouts[x].timeoutMinutes * 60) * 100, meta: jobTimeouts[x].meta });
 
   const template = (process.env.NODE_ENV === 'production') ? initTemplate : Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
 
@@ -79,8 +79,8 @@ const sendMessage = (process.env.NODE_ENV === 'production')
   });
   
 
-function getTimeLeft(timeout) {
+function getSecondsLeft(timeout) {
   const milliseconds = timeout._idleStart + timeout._idleTimeout - (process.uptime() * 1000);
-  const minutes =  milliseconds / 1000 / 60;
-  return minutes;
+  const seconds  =  milliseconds / 1000;
+  return seconds;
 }
