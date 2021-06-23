@@ -67,9 +67,10 @@ function requireBody(expected) {
  }
 }
 
-const sendMessage = (app.get('env') === 'development')
-  ? (body, to) => new Promise(() => console.log(`<sms> ${to} ${body}`))
-  : (body, to) => twilio.messages.create({ messagingServiceSid, body, to });
+const sendMessage = (process.env.NODE_ENV === 'production')
+  ? (body, to) => twilio.messages.create({ messagingServiceSid, body, to })
+  : (body, to) => new Promise(() => console.log(`<sms> ${to} ${body}`));
+  
 
 function getTimeLeft(timeout) {
   const milliseconds = timeout._idleStart + timeout._idleTimeout - (process.uptime() * 1000);
