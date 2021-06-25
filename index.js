@@ -43,14 +43,15 @@ app.post('/', requireBody({jobName:"xxxService", timeoutMinutes: 5, message: "se
 });
 
 
-const initTemplate = Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
+const initTemplate = Handlebars.compile(fs.readFileSync('./index.handlebars', 'utf8'));
 app.get('/', (req, res) => {
   const user = req.auth.user;
-  var userJobs = Object.keys(jobTimeouts).filter(x => x.startsWith(user));
+  var userJobs = user === 'admin' ? Object.keys(jobTimeouts) : Object.keys(jobTimeouts).filter(x => x.startsWith(user));
+  if (user === 'admin') user = '00000000-0000-0000-0000-00000000'; //retain just the last 4 digits for uniqueness in troubleshooting
   var templateData = new Object();
   userJobs.forEach(x => templateData[x.slice(user.length)] = { timeout: getSecondsLeft(jobTimeouts[x].timeout), timeoutPercent: getSecondsLeft(jobTimeouts[x].timeout) / (jobTimeouts[x].timeoutMinutes * 60) * 100, meta: jobTimeouts[x].meta });
 
-  const template = (process.env.NODE_ENV === 'production') ? initTemplate : Handlebars.compile(fs.readFileSync('./get.html', 'utf8'));
+  const template = (process.env.NODE_ENV === 'production') ? initTemplate : Handlebars.compile(fs.readFileSync('./index.handlebars', 'utf8'));
 
   const html = template(templateData);
   return res.send(html);
